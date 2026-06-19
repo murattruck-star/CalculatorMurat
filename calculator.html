@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор стоимости перевозки</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white; padding: 24px 32px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header-icon { font-size: 36px; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
+  .header p { font-size: 13px; opacity: 0.7; margin-top: 3px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Input section */
+  .card {
+    background: white; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 20px;
+    font-weight: 700; font-size: 13px; letter-spacing: 0.8px;
+    text-transform: uppercase; border-bottom: 1px solid #f0f0f0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-header.blue { background: #1a1a2e; color: white; }
+  .card-header.orange { background: #e8640a; color: white; }
+  .card-header.green { background: #1a7a4a; color: white; }
+
+  .inputs-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px; padding: 20px;
+  }
+  .input-group label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .input-wrap { position: relative; }
+  .input-wrap input {
+    width: 100%; padding: 10px 44px 10px 12px;
+    border: 2px solid #e8e8e8; border-radius: 8px;
+    font-size: 15px; font-weight: 600; color: #1a1a2e;
+    background: #fffbea; transition: border-color 0.2s;
+    outline: none;
+  }
+  .input-wrap input:focus { border-color: #e8640a; background: #fff8e1; }
+  .input-unit {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: #999; font-weight: 600;
+  }
+
+  /* Calculated params */
+  .calc-params {
+    display: flex; gap: 12px; padding: 0 20px 20px; flex-wrap: wrap;
+  }
+  .param-chip {
+    background: #f5f5f5; border-radius: 8px;
+    padding: 10px 16px; flex: 1; min-width: 140px;
+  }
+  .param-chip .label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
+  .param-chip .value { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-top: 2px; }
+  .param-chip .unit { font-size: 11px; color: #aaa; }
+
+  /* Escort checkbox */
+  .escort-row { padding: 0 20px 16px; display: flex; align-items: center; gap: 10px; }
+  .escort-row label { font-size: 13px; font-weight: 600; color: #444; cursor: pointer; }
+  .escort-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #e8640a; }
+
+  /* LTL Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: #f7f7f7; padding: 10px 14px;
+    text-align: right; font-size: 11px; font-weight: 700;
+    color: #555; letter-spacing: 0.4px; text-transform: uppercase;
+    border-bottom: 2px solid #e8e8e8;
+  }
+  th:first-child { text-align: left; }
+  td {
+    padding: 11px 14px; border-bottom: 1px solid #f5f5f5;
+    text-align: right; font-size: 13px;
+  }
+  td:first-child { text-align: left; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+
+  .total-cell {
+    font-weight: 700; font-size: 15px; color: #1a7a4a;
+  }
+  .rate-cell { color: #888; }
+  .base-cell { color: #444; }
+  .margin-cell { color: #e8640a; }
+
+  /* FTL Table */
+  .ftl-row td:last-child { font-weight: 700; }
+  .badge {
+    display: inline-block; padding: 3px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .badge-yes { background: #d4edda; color: #1a7a4a; }
+  .badge-no { background: #f8d7da; color: #c0392b; }
+
+  .best-row td { background: #f0fff4 !important; }
+
+  /* Note */
+  .note {
+    padding: 10px 20px 14px; font-size: 11px; color: #999;
+    border-top: 1px solid #f5f5f5;
+  }
+
+  /* Reset button */
+  .btn-reset {
+    background: none; border: 2px solid #ddd; border-radius: 8px;
+    padding: 8px 18px; font-size: 13px; font-weight: 600; color: #666;
+    cursor: pointer; margin-left: auto; display: block; margin-right: 20px; margin-bottom: 20px;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: #e8640a; color: #e8640a; }
+
+  @media (max-width: 600px) {
+    .inputs-grid { grid-template-columns: 1fr 1fr; }
+    .header h1 { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🚛</div>
+  <div>
+    <h1>Калькулятор стоимости перевозки</h1>
+    <p>Введите расстояние и габариты — калькулятор рассчитает стоимость для всех типов транспорта</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Ввод данных -->
+  <div class="card">
+    <div class="card-header blue">📋 Вводные данные</div>
+    <div class="inputs-grid">
+      <div class="input-group">
+        <label>Расстояние</label>
+        <div class="input-wrap">
+          <input type="number" id="distance" placeholder="0" min="0" oninput="calculate()">
+          <span class="input-unit">км</span>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Вес груза</label>
+        <div class="input-wrap">
+          <input type="number" id="weight" placeholder="0" min="0" step="0.1" oninput="calculate()">
+          <span class="input-unit">тонн</span>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Длина груза</label>
+        <div class="input-wrap">
+          <input type="number" id="length" placeholder="0" min="0" step="0.1" oninput="calculate()">
+          <span class="input-unit">м</span>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Ширина груза</label>
+        <div class="input-wrap">
+          <input type="number" id="width" placeholder="0" min="0" step="0.1" oninput="calculate()">
+          <span class="input-unit">м</span>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Высота груза</label>
+        <div class="input-wrap">
+          <input type="number" id="height" placeholder="0" min="0" step="0.1" oninput="calculate()">
+          <span class="input-unit">м</span>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Порожний пробег</label>
+        <div class="input-wrap">
+          <input type="number" id="empty" placeholder="0" min="0" oninput="calculate()">
+          <span class="input-unit">км</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="escort-row">
+      <input type="checkbox" id="escort" onchange="calculate()">
+      <label for="escort">Нужно сопровождение</label>
+    </div>
+
+    <!-- Расчётные параметры -->
+    <div class="calc-params">
+      <div class="param-chip">
+        <div class="label">Объём груза</div>
+        <div class="value" id="vol">0.00</div>
+        <div class="unit">м³</div>
+      </div>
+      <div class="param-chip">
+        <div class="label">Погонные метры (МПП)</div>
+        <div class="value" id="mpp">0.00</div>
+        <div class="unit">м</div>
+      </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetAll()">↺ Сбросить</button>
+  </div>
+
+  <!-- LTL -->
+  <div class="card">
+    <div class="card-header orange">📦 Консолидация — Сборный груз (LTL)</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Тип расчёта</th>
+            <th>Ставка (тг/км)</th>
+            <th>Базовая стоимость</th>
+            <th>Маржа 20%</th>
+            <th>ИТОГО (тенге)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>По весу груза</td>
+            <td class="rate-cell" id="ltl-w-rate">—</td>
+            <td class="base-cell" id="ltl-w-base">—</td>
+            <td class="margin-cell" id="ltl-w-margin">—</td>
+            <td class="total-cell" id="ltl-w-total">—</td>
+          </tr>
+          <tr>
+            <td>По объёму груза</td>
+            <td class="rate-cell" id="ltl-v-rate">—</td>
+            <td class="base-cell" id="ltl-v-base">—</td>
+            <td class="margin-cell" id="ltl-v-margin">—</td>
+            <td class="total-cell" id="ltl-v-total">—</td>
+          </tr>
+          <tr>
+            <td>По погонным метрам (МПП)</td>
+            <td class="rate-cell" id="ltl-m-rate">—</td>
+            <td class="base-cell" id="ltl-m-base">—</td>
+            <td class="margin-cell" id="ltl-m-margin">—</td>
+            <td class="total-cell" id="ltl-m-total">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">* Итого включает маржу 20%. НДС и порожний пробег — отдельно.</div>
+  </div>
+
+  <!-- FTL -->
+  <div class="card">
+    <div class="card-header green">🏗️ Полный рейс — Тралы и спецтехника (FTL)</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Тип транспорта</th>
+            <th>Тариф груж. (тг/км)</th>
+            <th>Стоим. груж.</th>
+            <th>Тариф пор. (тг/км)</th>
+            <th>Стоим. пор.</th>
+            <th>Сопровожд.</th>
+            <th>Маржа 20%</th>
+            <th>ИТОГО (тенге)</th>
+            <th>Подходит?</th>
+          </tr>
+        </thead>
+        <tbody id="ftl-body">
+        </tbody>
+      </table>
+    </div>
+    <div class="note">* «Подходит» — по весу и габаритам. Маржа 20% включена в ИТОГО. Порожний пробег — по отдельной строке ввода.</div>
+  </div>
+
+</div>
+
+<script>
+// ====== ТАРИФНЫЕ ТАБЛИЦЫ ======
+
+const WEIGHT_RATES = [
+  [0,150],[1,180],[3,220],[5,250],[7,300],[9,350],[11,380],[14,400],[16,450],[18,500]
+];
+const VOL_RATES = [
+  [0,120],[5,140],[10,200],[20,250],[30,280],[40,300],[50,350],[60,400],[70,450],[90,500],[105,550]
+];
+const MPP_RATES = [
+  [0,100],[1,150],[2,200],[3,250],[4,280],[5,300],[6,350],[7,400],[8,450],[10,500]
+];
+
+const FTL_TRANSPORT = [
+  { name:'Тент / Площадка',       loadRate:800,  emptyRate:80,  escortRate:350, maxW:22,  maxL:13.6, maxWid:2.45, maxH:2.7  },
+  { name:'3-осный низкорамник',   loadRate:850,  emptyRate:200, escortRate:350, maxW:22,  maxL:13.6, maxWid:2.45, maxH:3.5  },
+  { name:'4-осный трал',          loadRate:1000, emptyRate:400, escortRate:350, maxW:40,  maxL:16,   maxWid:3.5,  maxH:4.0  },
+  { name:'5-осный трал',          loadRate:1200, emptyRate:500, escortRate:350, maxW:50,  maxL:18,   maxWid:3.5,  maxH:4.0  },
+  { name:'6-осный трал',          loadRate:1500, emptyRate:700, escortRate:400, maxW:60,  maxL:20,   maxWid:3.5,  maxH:4.0  },
+  { name:'7-осный трал',          loadRate:1600, emptyRate:800, escortRate:400, maxW:70,  maxL:24,   maxWid:3.5,  maxH:4.0  },
+  { name:'8-осный трал',          loadRate:1800, emptyRate:800, escortRate:450, maxW:80,  maxL:24,   maxWid:3.5,  maxH:4.0  },
+  { name:'Модуль до 100 тонн',    loadRate:2500, emptyRate:1500,escortRate:500, maxW:100, maxL:30,   maxWid:4.0,  maxH:4.5  },
+];
+
+// ====== HELPERS ======
+
+function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function lookupRate(table, v) {
+  let rate = table[0][1];
+  for (let [threshold, r] of table) {
+    if (v >= threshold) rate = r;
+    else break;
+  }
+  return rate;
+}
+
+function fmt(n) {
+  if (n === 0 || isNaN(n)) return '—';
+  return n.toLocaleString('ru-RU', {maximumFractionDigits:0}) + ' ₸';
+}
+function fmtNum(n, dec=2) {
+  return n.toLocaleString('ru-RU', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+
+// ====== MAIN CALCULATE ======
+
+function calculate() {
+  const dist   = val('distance');
+  const weight = val('weight');
+  const len    = val('length');
+  const wid    = val('width');
+  const h      = val('height');
+  const empty  = val('empty');
+  const escort = document.getElementById('escort').checked;
+
+  // Расчётные параметры
+  const vol = len * wid * h;
+  const mpp = wid > 2.4 ? len * (wid / 2.4) : len;
+
+  document.getElementById('vol').textContent = fmtNum(vol);
+  document.getElementById('mpp').textContent = fmtNum(mpp);
+
+  if (dist === 0) {
+    clearResults();
+    return;
+  }
+
+  // ====== LTL ======
+  const wRate = lookupRate(WEIGHT_RATES, weight);
+  const vRate = lookupRate(VOL_RATES, vol);
+  const mRate = lookupRate(MPP_RATES, mpp);
+
+  const ltlCalc = (rate, multiplier) => {
+    const base   = dist * rate * multiplier;
+    const margin = base * 0.2;
+    return { rate, base, margin, total: base + margin };
+  };
+
+  const ltlW = ltlCalc(wRate, weight);
+  const ltlV = ltlCalc(vRate, vol);
+  const ltlM = ltlCalc(mRate, mpp);
+
+  set('ltl-w-rate',   wRate + ' тг/км');
+  set('ltl-w-base',   fmt(ltlW.base));
+  set('ltl-w-margin', fmt(ltlW.margin));
+  set('ltl-w-total',  fmt(ltlW.total));
+
+  set('ltl-v-rate',   vRate + ' тг/км');
+  set('ltl-v-base',   fmt(ltlV.base));
+  set('ltl-v-margin', fmt(ltlV.margin));
+  set('ltl-v-total',  fmt(ltlV.total));
+
+  set('ltl-m-rate',   mRate + ' тг/км');
+  set('ltl-m-base',   fmt(ltlM.base));
+  set('ltl-m-margin', fmt(ltlM.margin));
+  set('ltl-m-total',  fmt(ltlM.total));
+
+  // ====== FTL ======
+  const tbody = document.getElementById('ftl-body');
+  tbody.innerHTML = '';
+
+  let minTotal = Infinity;
+  let bestIdx = -1;
+
+  const rows = FTL_TRANSPORT.map((t, i) => {
+    const fits = (weight === 0 || weight <= t.maxW) &&
+                 (len    === 0 || len    <= t.maxL) &&
+                 (wid    === 0 || wid    <= t.maxWid) &&
+                 (h      === 0 || h      <= t.maxH);
+
+    const loadCost   = dist  * t.loadRate;
+    const emptyCost  = empty * t.emptyRate;
+    const escortCost = escort ? dist * t.escortRate : 0;
+    const subtotal   = loadCost + emptyCost + escortCost;
+    const margin     = subtotal * 0.2;
+    const total      = subtotal + margin;
+
+    if (fits && total < minTotal) { minTotal = total; bestIdx = i; }
+
+    return { t, fits, loadCost, emptyCost, escortCost, margin, total };
+  });
+
+  rows.forEach(({ t, fits, loadCost, emptyCost, escortCost, margin, total }, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'ftl-row' + (i === bestIdx ? ' best-row' : '');
+    const badge = fits
+      ? `<span class="badge badge-yes">✓ Подходит</span>`
+      : `<span class="badge badge-no">✗ Не подходит</span>`;
+    tr.innerHTML = `
+      <td>${t.name}${i === bestIdx ? ' <span style="font-size:11px;color:#1a7a4a;font-weight:700;">⭐ Оптимально</span>' : ''}</td>
+      <td class="rate-cell">${t.loadRate}</td>
+      <td class="base-cell">${fmt(loadCost)}</td>
+      <td class="rate-cell">${t.emptyRate}</td>
+      <td class="base-cell">${fmt(emptyCost)}</td>
+      <td class="base-cell">${escort ? fmt(escortCost) : '—'}</td>
+      <td class="margin-cell">${fmt(margin)}</td>
+      <td class="total-cell">${fmt(total)}</td>
+      <td>${badge}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function set(id, v) { document.getElementById(id).textContent = v; }
+
+function clearResults() {
+  ['ltl-w-rate','ltl-w-base','ltl-w-margin','ltl-w-total',
+   'ltl-v-rate','ltl-v-base','ltl-v-margin','ltl-v-total',
+   'ltl-m-rate','ltl-m-base','ltl-m-margin','ltl-m-total'
+  ].forEach(id => set(id, '—'));
+
+  const tbody = document.getElementById('ftl-body');
+  tbody.innerHTML = '';
+  FTL_TRANSPORT.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.className = 'ftl-row';
+    tr.innerHTML = `
+      <td>${t.name}</td>
+      <td class="rate-cell">${t.loadRate}</td>
+      <td>—</td>
+      <td class="rate-cell">${t.emptyRate}</td>
+      <td>—</td><td>—</td><td>—</td>
+      <td class="total-cell">—</td>
+      <td><span class="badge" style="background:#f5f5f5;color:#999">—</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function resetAll() {
+  ['distance','weight','length','width','height','empty'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('escort').checked = false;
+  document.getElementById('vol').textContent = '0.00';
+  document.getElementById('mpp').textContent = '0.00';
+  clearResults();
+}
+
+// Инициализация
+clearResults();
+</script>
+</body>
+</html>
